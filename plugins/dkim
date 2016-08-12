@@ -414,6 +414,15 @@ sub get_keydir {
     my ($self, $transaction) = @_;
 
     my $domain = $transaction->sender->host;
+    
+    # fallback for sieve processing, which uses "MAIL FROM: <>"
+    if(!$domain && $transaction->header->get("From")) {
+        my $raw_from = $transaction->header->get("From");
+        $raw_from =~ s/^[^<]*</</;
+        my $from = Qpsmtpd::Address->new($raw_from);
+        $domain = $from->host;
+    }
+    
     my $dir    = "config/dkim/$domain";
 
     if (!-e $dir) {    # the dkim key dir doesn't exist
